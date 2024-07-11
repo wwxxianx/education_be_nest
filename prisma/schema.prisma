@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                    String                   @id @default(uuid())
+  fullName              String
+  email                 String
+  reviews               UserReview[]
+  instructorProfile     CourseInstructorProfile? @relation(fields: [instructorProfileId], references: [id])
+  instructorProfileId   String?
+  publishedCourses      Course[]
+  refreshToken          String?
+  isOnboardingCompleted Boolean                  @default(false)
+
+  @@map("users")
+}
+
+enum CourseLevelEnum {
+  BEGINNER
+  INTERMEDIATE
+  EXPERT
+}
+
+model CourseLevel {
+  id     String          @id @default(uuid())
+  level  CourseLevelEnum
+  Course Course[]
+
+  @@map("course_levels")
+}
+
+enum MimeType {
+  VIDEO
+  TEXT
+  DOCUMENT
+}
+
+model CourseResource {
+  id         String      @id @default(uuid())
+  url        String
+  mimeType   MimeType
+  coursePart CoursePart?
+
+  @@map("media_resources")
+}
+
+model CoursePart {
+  id              String         @id @default(uuid())
+  order           Int
+  title           String
+  resource        CourseResource @relation(fields: [resourceId], references: [id])
+  resourceId      String         @unique
+  courseSection   CourseSection  @relation(fields: [courseSectionId], references: [id])
+  courseSectionId String
+
+  @@map("course_parts")
+}
+
+model CourseSection {
+  id       String       @id @default(uuid())
+  order    Int
+  title    String
+  parts    CoursePart[]
+  course   Course       @relation(fields: [courseId], references: [id])
+  courseId String
+
+  @@map("course_sections")
+}
+
+enum CoursePublishStatus {
+  DRAFT
+  PUBLISHED
+  UNDER_REVIEW
+}
+
+model Course {
+  id            String              @id @default(uuid())
+  status        CoursePublishStatus
+  title         String
+  description   String
+  levelId       String
+  level         CourseLevel         @relation(fields: [levelId], references: [id])
+  instructorId  String
+  instructor    User                @relation(fields: [instructorId], references: [id]) // Relationship with CourseInstructor
+  categoryId    String
+  category      CourseCategory      @relation(fields: [categoryId], references: [id]) // Relationship with CourseCategory
+  subcategories CourseSubcategory[]
+  price         Float?
+  reviewRating  Float?
+  topics        String[]
+  requirements  String[]
+  videoUrl      String?
+  thumbnailUrl  String
+
+  language    Language        @relation(fields: [languageId], references: [id])
+  languageId  String
+  images      CourseImage[]
+  updates     CourseUpdate[]
+  sections    CourseSection[]
+  reviews     UserReview[]
+  certificate Certificate?
+  courseFAQ   CourseFAQ[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("courses")
+}
+
+model CourseCategory {
+  id            String              @id @default(uuid())
+  title         String
+  subcategories CourseSubcategory[]
+  courses       Course[]
+
+  @@map("course_categories")
+}
+
+model CourseSubcategory {
+  id               String         @id @default(uuid())
+  title            String
+  courseCategory   CourseCategory @relation(fields: [courseCategoryId], references: [id])
+  courseCategoryId String
+  courses          Course[]
+
+  @@map("course_subcategories")
+}
+
+model CourseUpdate {
+  id             String   @id @default(uuid())
+  updateOverview String
+  createdAt      DateTime @default(now())
+  courseId       String
+  course         Course   @relation(fields: [courseId], references: [id]) // Relationship with Course
+
+  @@map("course_updates")
+}
+
+model CourseInstructorProfile {
+  id              String   @id @default(uuid())
+  fullName        String
+  title           String?
+  profileImageUrl String?
+  createdAt       DateTime @default(now())
+  user            User[]
+
+  @@map("course_instructor_profiles")
+}
+
+model UserReview {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id]) // Relationship with User
+  reviewContent String
+  reviewRating  Int
+  createdAt     DateTime @default(now())
+  courseId      String
+  course        Course   @relation(fields: [courseId], references: [id]) // Relationship with Course
+
+  @@map("user_reviews")
+}
+
+model Certificate {
+  id                  String @id @default(uuid())
+  title               String
+  certificateImageUrl String
+  course              Course @relation(fields: [courseId], references: [id])
+  courseId            String @unique
+
+  @@map("certificates")
+}
+
+model CourseFAQ {
+  id        String   @id @default(uuid())
+  question  String
+  answer    String
+  course    Course   @relation(fields: [courseId], references: [id])
+  courseId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("course_faq")
+}
+
+model Language {
+  id       String   @id @default(uuid())
+  language String
+  courses  Course[]
+
+  @@map("languages")
+}
+
+model CourseImage {
+  id       String @id @default(uuid())
+  imageUrl String
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId String
+
+  @@map("course_images")
+}
