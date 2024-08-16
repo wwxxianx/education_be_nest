@@ -2,24 +2,104 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator dbml {
+  provider = "prisma-dbml-generator"
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
+model RecommendedCourse {
+  searchTerm String
+  courses    Course[]
+
+  @@id([searchTerm])
+}
+
+model BankAccount {
+  id                     String  @id @default(uuid())
+  stripeConnectAccountId String
+  user                   User    @relation(fields: [userId], references: [id])
+  userId                 String  @unique
+  detailsSubmitted       Boolean @default(false)
+  payoutsEnabled         Boolean @default(false)
+  chargesEnabled         Boolean @default(false)
+  email                  String?
+  error                  String?
+
+  @@map("bank_accounts")
+}
+
 model User {
-  id                    String                   @id @default(uuid())
+  id                    String                @id @default(uuid())
   fullName              String
   email                 String
   reviews               UserReview[]
-  instructorProfile     CourseInstructorProfile? @relation(fields: [instructorProfileId], references: [id])
-  instructorProfileId   String?
   publishedCourses      Course[]
   refreshToken          String?
-  isOnboardingCompleted Boolean                  @default(false)
+  isOnboardingCompleted Boolean               @default(false)
+  vouchers              UserVoucher[]
+  participatedCourses   UserCourse[]
+  favouriteCourses      UserFavouriteCourse[]
+  profileImageUrl       String?
+
+  instructorProfile      CourseInstructorProfile?
+  bankAccount            BankAccount?
+  generatedNotifications Notification[]           @relation(name: "NotificationActors")
+  receivedNotifications  Notification[]           @relation(name: "NotificationReceivers")
+  courseProgresses       CourseProgress[]
+  preference             UserPreference?
 
   @@map("users")
+}
+
+model UserPreference {
+  id                           String              @id @default(uuid())
+  favouriteCourseCategories    CourseCategory[]
+  favouriteCourseSubcategories CourseSubcategory[]
+  user                         User                @relation(fields: [userId], references: [id])
+  userId                       String              @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_preferences")
+}
+
+enum NotificationType {
+  COURSE_VOUCHER
+  COURSE_ENROLLED
+  COURSE_UPDATE
+}
+
+model Notification {
+  id   String           @id @default(uuid())
+  type NotificationType
+
+  title       String
+  description String
+  isRead      Boolean @default(false)
+  // Meta (Optional):
+  // {"header", "footer"}
+  metadata    Json?
+
+  // Who trigger this notification
+  actor   User   @relation(name: "NotificationActors", fields: [actorId], references: [id])
+  actorId String
+
+  receiver   User   @relation(name: "NotificationReceivers", fields: [receiverId], references: [id])
+  receiverId String
+
+  // Resource id for notification actions (e.g., navigate to that resource when tap)
+  entityId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notifications")
 }
 
 enum CourseLevelEnum {
@@ -52,13 +132,14 @@ model CourseResource {
 }
 
 model CoursePart {
-  id              String         @id @default(uuid())
+  id              String           @id @default(uuid())
   order           Int
   title           String
-  resource        CourseResource @relation(fields: [resourceId], references: [id])
-  resourceId      String         @unique
-  courseSection   CourseSection  @relation(fields: [courseSectionId], references: [id])
+  resource        CourseResource   @relation(fields: [resourceId], references: [id])
+  resourceId      String           @unique
+  courseSection   CourseSection    @relation(fields: [courseSectionId], references: [id], onDelete: Cascade)
   courseSectionId String
+  courseProgress  CourseProgress[]
 
   @@map("course_parts")
 }
@@ -68,7 +149,7 @@ model CourseSection {
   order    Int
   title    String
   parts    CoursePart[]
-  course   Course       @relation(fields: [courseId], references: [id])
+  course   Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   courseId String
 
   @@map("course_sections")
@@ -92,8 +173,9 @@ model Course {
   categoryId    String
   category      CourseCategory      @relation(fields: [categoryId], references: [id]) // Relationship with CourseCategory
   subcategories CourseSubcategory[]
-  price         Float?
-  reviewRating  Float?
+  // In Cents unit
+  price         Int // 0 means free
+  reviewRating  Float               @default(0)
   topics        String[]
   requirements  String[]
   videoUrl      String?
@@ -108,27 +190,36 @@ model Course {
   certificate Certificate?
   courseFAQ   CourseFAQ[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt                   DateTime              @default(now())
+  updatedAt                   DateTime              @updatedAt
+  vouchers                    Voucher[]
+  participatedUsers           UserCourse[]
+  UserFavouriteCourse         UserFavouriteCourse[]
+  recommendedCourse           RecommendedCourse?    @relation(fields: [recommendedCourseSearchTerm], references: [searchTerm])
+  recommendedCourseSearchTerm String?
 
   @@map("courses")
 }
 
 model CourseCategory {
-  id            String              @id @default(uuid())
-  title         String
-  subcategories CourseSubcategory[]
-  courses       Course[]
+  id               String              @id @default(uuid())
+  title            String
+  subcategories    CourseSubcategory[]
+  courses          Course[]
+  UserPreference   UserPreference?     @relation(fields: [userPreferenceId], references: [id])
+  userPreferenceId String?
 
   @@map("course_categories")
 }
 
 model CourseSubcategory {
-  id               String         @id @default(uuid())
+  id               String          @id @default(uuid())
   title            String
-  courseCategory   CourseCategory @relation(fields: [courseCategoryId], references: [id])
+  courseCategory   CourseCategory  @relation(fields: [courseCategoryId], references: [id])
   courseCategoryId String
   courses          Course[]
+  UserPreference   UserPreference? @relation(fields: [userPreferenceId], references: [id])
+  userPreferenceId String?
 
   @@map("course_subcategories")
 }
@@ -138,7 +229,7 @@ model CourseUpdate {
   updateOverview String
   createdAt      DateTime @default(now())
   courseId       String
-  course         Course   @relation(fields: [courseId], references: [id]) // Relationship with Course
+  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("course_updates")
 }
@@ -149,7 +240,8 @@ model CourseInstructorProfile {
   title           String?
   profileImageUrl String?
   createdAt       DateTime @default(now())
-  user            User[]
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId          String   @unique
 
   @@map("course_instructor_profiles")
 }
@@ -164,6 +256,7 @@ model UserReview {
   courseId      String
   course        Course   @relation(fields: [courseId], references: [id]) // Relationship with Course
 
+  @@unique([userId, courseId])
   @@map("user_reviews")
 }
 
@@ -171,7 +264,7 @@ model Certificate {
   id                  String @id @default(uuid())
   title               String
   certificateImageUrl String
-  course              Course @relation(fields: [courseId], references: [id])
+  course              Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId            String @unique
 
   @@map("certificates")
@@ -181,7 +274,7 @@ model CourseFAQ {
   id        String   @id @default(uuid())
   question  String
   answer    String
-  course    Course   @relation(fields: [courseId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -200,8 +293,81 @@ model Language {
 model CourseImage {
   id       String @id @default(uuid())
   imageUrl String
-  course   Course @relation(fields: [courseId], references: [id])
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String
 
   @@map("course_images")
+}
+
+model Voucher {
+  id                 String    @id @default(uuid())
+  course             Course    @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId           String
+  title              String
+  expiredAt          DateTime?
+  stock              Int?
+  afterDiscountValue Int
+  isVoucherAvailable Boolean
+
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  claimedBy UserVoucher[]
+
+  @@map("vouchers")
+}
+
+model UserVoucher {
+  user      User    @relation(fields: [userId], references: [id])
+  userId    String
+  voucher   Voucher @relation(fields: [voucherId], references: [id])
+  voucherId String
+
+  createdAt       DateTime    @default(now())
+  usedAt          DateTime?
+  appliedCourse   UserCourse? @relation(fields: [appliedCourseId], references: [id])
+  appliedCourseId String?
+
+  @@id([userId, voucherId])
+  @@unique([userId, voucherId])
+  @@map("user_vouchers")
+}
+
+model UserCourse {
+  id              String        @id @default(uuid())
+  user            User          @relation(fields: [userId], references: [id])
+  userId          String
+  course          Course        @relation(fields: [courseId], references: [id])
+  courseId        String
+  appliedVouchers UserVoucher[]
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  courseProgresses CourseProgress[]
+
+  @@map("user_courses")
+}
+
+model UserFavouriteCourse {
+  user     User   @relation(fields: [userId], references: [id])
+  userId   String
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId String
+
+  createdAt DateTime @default(now())
+
+  @@id([userId, courseId])
+  @@map("user_favourite_courses")
+}
+
+model CourseProgress {
+  userCourse   UserCourse @relation(fields: [userCourseId], references: [id])
+  userCourseId String
+  part         CoursePart @relation(fields: [partId], references: [id])
+  partId       String
+  startedAt    DateTime   @default(now())
+  User         User?      @relation(fields: [userId], references: [id])
+  userId       String?
+
+  @@id([userCourseId, partId])
+  @@map("course_progresses")
 }

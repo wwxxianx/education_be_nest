@@ -1,0 +1,384 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table RecommendedCourse {
+  searchTerm String [pk]
+  courses courses [not null]
+
+  indexes {
+    (searchTerm) [pk]
+  }
+}
+
+Table bank_accounts {
+  id String [pk]
+  stripeConnectAccountId String [not null]
+  user users [not null]
+  userId String [unique, not null]
+  detailsSubmitted Boolean [not null, default: false]
+  payoutsEnabled Boolean [not null, default: false]
+  chargesEnabled Boolean [not null, default: false]
+  email String
+  error String
+}
+
+Table users {
+  id String [pk]
+  fullName String [not null]
+  email String [not null]
+  reviews user_reviews [not null]
+  publishedCourses courses [not null]
+  refreshToken String
+  isOnboardingCompleted Boolean [not null, default: false]
+  vouchers user_vouchers [not null]
+  participatedCourses user_courses [not null]
+  favouriteCourses user_favourite_courses [not null]
+  profileImageUrl String
+  instructorProfile course_instructor_profiles
+  bankAccount bank_accounts
+  generatedNotifications notifications [not null]
+  receivedNotifications notifications [not null]
+  courseProgresses course_progresses [not null]
+  preference user_preferences
+}
+
+Table user_preferences {
+  id String [pk]
+  favouriteCourseCategories course_categories [not null]
+  favouriteCourseSubcategories course_subcategories [not null]
+  user users [not null]
+  userId String [unique, not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table notifications {
+  id String [pk]
+  type NotificationType [not null]
+  title String [not null]
+  description String [not null]
+  isRead Boolean [not null, default: false]
+  metadata Json
+  actor users [not null]
+  actorId String [not null]
+  receiver users [not null]
+  receiverId String [not null]
+  entityId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table course_levels {
+  id String [pk]
+  level CourseLevelEnum [not null]
+  Course courses [not null]
+}
+
+Table media_resources {
+  id String [pk]
+  url String [not null]
+  mimeType MimeType [not null]
+  coursePart course_parts
+}
+
+Table course_parts {
+  id String [pk]
+  order Int [not null]
+  title String [not null]
+  resource media_resources [not null]
+  resourceId String [unique, not null]
+  courseSection course_sections [not null]
+  courseSectionId String [not null]
+  courseProgress course_progresses [not null]
+}
+
+Table course_sections {
+  id String [pk]
+  order Int [not null]
+  title String [not null]
+  parts course_parts [not null]
+  course courses [not null]
+  courseId String [not null]
+}
+
+Table courses {
+  id String [pk]
+  status CoursePublishStatus [not null]
+  title String [not null]
+  description String [not null]
+  levelId String [not null]
+  level course_levels [not null]
+  instructorId String [not null]
+  instructor users [not null]
+  categoryId String [not null]
+  category course_categories [not null]
+  subcategories course_subcategories [not null]
+  price Int [not null]
+  reviewRating Float [not null, default: 0]
+  topics String[] [not null]
+  requirements String[] [not null]
+  videoUrl String
+  thumbnailUrl String [not null]
+  language languages [not null]
+  languageId String [not null]
+  images course_images [not null]
+  updates course_updates [not null]
+  sections course_sections [not null]
+  reviews user_reviews [not null]
+  certificate certificates
+  courseFAQ course_faq [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  vouchers vouchers [not null]
+  participatedUsers user_courses [not null]
+  UserFavouriteCourse user_favourite_courses [not null]
+  recommendedCourse RecommendedCourse
+  recommendedCourseSearchTerm String
+}
+
+Table course_categories {
+  id String [pk]
+  title String [not null]
+  subcategories course_subcategories [not null]
+  courses courses [not null]
+  UserPreference user_preferences
+  userPreferenceId String
+}
+
+Table course_subcategories {
+  id String [pk]
+  title String [not null]
+  courseCategory course_categories [not null]
+  courseCategoryId String [not null]
+  courses courses [not null]
+  UserPreference user_preferences
+  userPreferenceId String
+}
+
+Table course_updates {
+  id String [pk]
+  updateOverview String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  courseId String [not null]
+  course courses [not null]
+}
+
+Table course_instructor_profiles {
+  id String [pk]
+  fullName String [not null]
+  title String
+  profileImageUrl String
+  createdAt DateTime [default: `now()`, not null]
+  user users [not null]
+  userId String [unique, not null]
+}
+
+Table user_reviews {
+  id String [pk]
+  userId String [not null]
+  user users [not null]
+  reviewContent String [not null]
+  reviewRating Int [not null]
+  createdAt DateTime [default: `now()`, not null]
+  courseId String [not null]
+  course courses [not null]
+
+  indexes {
+    (userId, courseId) [unique]
+  }
+}
+
+Table certificates {
+  id String [pk]
+  title String [not null]
+  certificateImageUrl String [not null]
+  course courses [not null]
+  courseId String [unique, not null]
+}
+
+Table course_faq {
+  id String [pk]
+  question String [not null]
+  answer String [not null]
+  course courses [not null]
+  courseId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table languages {
+  id String [pk]
+  language String [not null]
+  courses courses [not null]
+}
+
+Table course_images {
+  id String [pk]
+  imageUrl String [not null]
+  course courses [not null]
+  courseId String [not null]
+}
+
+Table vouchers {
+  id String [pk]
+  course courses [not null]
+  courseId String [not null]
+  title String [not null]
+  expiredAt DateTime
+  stock Int
+  afterDiscountValue Int [not null]
+  isVoucherAvailable Boolean [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  claimedBy user_vouchers [not null]
+}
+
+Table user_vouchers {
+  user users [not null]
+  userId String [not null]
+  voucher vouchers [not null]
+  voucherId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  usedAt DateTime
+  appliedCourse user_courses
+  appliedCourseId String
+
+  indexes {
+    (userId, voucherId) [pk]
+    (userId, voucherId) [unique]
+  }
+}
+
+Table user_courses {
+  id String [pk]
+  user users [not null]
+  userId String [not null]
+  course courses [not null]
+  courseId String [not null]
+  appliedVouchers user_vouchers [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  courseProgresses course_progresses [not null]
+}
+
+Table user_favourite_courses {
+  user users [not null]
+  userId String [not null]
+  course courses [not null]
+  courseId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (userId, courseId) [pk]
+  }
+}
+
+Table course_progresses {
+  userCourse user_courses [not null]
+  userCourseId String [not null]
+  part course_parts [not null]
+  partId String [not null]
+  startedAt DateTime [default: `now()`, not null]
+  User users
+  userId String
+
+  indexes {
+    (userCourseId, partId) [pk]
+  }
+}
+
+Table CourseToCourseSubcategory {
+  subcategoriesId String [ref: > course_subcategories.id]
+  coursesId String [ref: > courses.id]
+}
+
+Enum NotificationType {
+  COURSE_VOUCHER
+  COURSE_ENROLLED
+  COURSE_UPDATE
+}
+
+Enum CourseLevelEnum {
+  BEGINNER
+  INTERMEDIATE
+  EXPERT
+}
+
+Enum MimeType {
+  VIDEO
+  TEXT
+  DOCUMENT
+}
+
+Enum CoursePublishStatus {
+  DRAFT
+  PUBLISHED
+  UNDER_REVIEW
+}
+
+Ref: bank_accounts.userId - users.id
+
+Ref: user_preferences.userId - users.id
+
+Ref: notifications.actorId > users.id
+
+Ref: notifications.receiverId > users.id
+
+Ref: course_parts.resourceId - media_resources.id
+
+Ref: course_parts.courseSectionId > course_sections.id [delete: Cascade]
+
+Ref: course_sections.courseId > courses.id [delete: Cascade]
+
+Ref: courses.levelId > course_levels.id
+
+Ref: courses.instructorId > users.id
+
+Ref: courses.categoryId > course_categories.id
+
+Ref: courses.languageId > languages.id
+
+Ref: courses.recommendedCourseSearchTerm > RecommendedCourse.searchTerm
+
+Ref: course_categories.userPreferenceId > user_preferences.id
+
+Ref: course_subcategories.courseCategoryId > course_categories.id
+
+Ref: course_subcategories.userPreferenceId > user_preferences.id
+
+Ref: course_updates.courseId > courses.id [delete: Cascade]
+
+Ref: course_instructor_profiles.userId - users.id [delete: Cascade]
+
+Ref: user_reviews.userId > users.id
+
+Ref: user_reviews.courseId > courses.id
+
+Ref: certificates.courseId - courses.id [delete: Cascade]
+
+Ref: course_faq.courseId > courses.id [delete: Cascade]
+
+Ref: course_images.courseId > courses.id [delete: Cascade]
+
+Ref: vouchers.courseId > courses.id [delete: Cascade]
+
+Ref: user_vouchers.userId > users.id
+
+Ref: user_vouchers.voucherId > vouchers.id
+
+Ref: user_vouchers.appliedCourseId > user_courses.id
+
+Ref: user_courses.userId > users.id
+
+Ref: user_courses.courseId > courses.id
+
+Ref: user_favourite_courses.userId > users.id
+
+Ref: user_favourite_courses.courseId > courses.id
+
+Ref: course_progresses.userCourseId > user_courses.id
+
+Ref: course_progresses.partId > course_parts.id
+
+Ref: course_progresses.userId > users.id

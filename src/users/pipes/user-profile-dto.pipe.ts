@@ -37,6 +37,9 @@ export class ParseUserProfileDtoPipe implements PipeTransform {
     if (key === 'isOnboardingCompleted') {
       return Boolean(value);
     }
+    if (key === 'preferenceCourseCategoryIds') {
+      return this.parseArray(value);
+    }
 
     return value;
   }

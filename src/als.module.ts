@@ -7,6 +7,7 @@ import { CoursesModule } from './courses/courses.module';
 import { CourseCategoriesModule } from './course-categories/course-categories.module';
 import { CourseUpdatesModule } from './course-updates/course-updates.module';
 import { CourseReviewsModule } from './course-reviews/course-reviews.module';
+import { UserVouchersModule } from './user-vouchers/user-vouchers.module';
 
 @Global()
 @Module({
@@ -17,6 +18,6 @@ import { CourseReviewsModule } from './course-reviews/course-reviews.module';
     },
   ],
   exports: [AsyncLocalStorage],
-  imports: [EmailModule, CourseLevelsModule, LanguagesModule, CoursesModule, CourseCategoriesModule, CourseUpdatesModule, CourseReviewsModule],
+  imports: [EmailModule, CourseLevelsModule, LanguagesModule, CoursesModule, CourseCategoriesModule, CourseUpdatesModule, CourseReviewsModule, UserVouchersModule],
 })
 export class AlsModule {}

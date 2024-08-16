@@ -3,4 +3,4 @@ export const storageConstants = Object.freeze({
   USER_BUCKET: 'user',
 });
 
-export type PaymentEntity = 'campaign_donation' | 'gift_card';
+export type PaymentEntity = 'purchase_course' | 'gift_card';

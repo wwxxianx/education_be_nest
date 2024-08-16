@@ -37,9 +37,4 @@ export class AuthController {
   ) {
     return this.authService.refreshTokens(userId, refreshToken);
   }
-
-  @Delete()
-  deleteAll(): Promise<void> {
-    return this.authService.deleteAll();
-  }
 }

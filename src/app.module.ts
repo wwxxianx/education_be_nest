@@ -6,11 +6,13 @@ import redisConfig from './config/redis.config';
 import { AlsModule } from './als.module';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './common/data/prisma.module';
-import { StripeModule } from './stripe/stripe.module';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-yet';
 import { UsersModule } from './users/users.module';
+import { StripeModule } from './payment/stripe.module';
+import { PaymentWebhookModule } from './webhooks/payments/payment-webhook.module';
+import { VouchersWebhookModule } from './webhooks/vouchers/vouchers-webhook.module';
 
 @Module({
   imports: [
@@ -55,6 +57,8 @@ import { UsersModule } from './users/users.module';
     PrismaModule,
     StripeModule.forRootAsync(),
     UsersModule,
+    PaymentWebhookModule,
+    VouchersWebhookModule,
   ],
   controllers: [AppController],
   providers: [AppService],

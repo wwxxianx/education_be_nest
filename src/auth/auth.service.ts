@@ -37,10 +37,6 @@ export class AuthService {
     };
   }
 
-  async deleteAll(): Promise<void> {
-    await this.prisma.user.deleteMany();
-  }
-
   async signIn(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -61,6 +57,9 @@ export class AuthService {
         id: id,
         email: email,
         fullName: formatFullName,
+        preference: {
+          create: {},
+        },
       },
     });
 
